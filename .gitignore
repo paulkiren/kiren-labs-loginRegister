@@ -1,0 +1,113 @@
+# GitHub Copilot
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log
+.pnpm-store/
+.npm/
+
+# Environment
+.env
+.env.*.local
+.env.local
+.env.test
+.env.production
+
+# Build / distribution
+dist/
+build/
+out/
+.next/
+.vite/
+.vite/
+.public/
+parcel-cache/
+.cache/
+.tmp/
+
+# Coverage / tests
+coverage/
+.nyc_output/
+jest-cache/
+coverage-final.json
+
+# Monorepo / tool caches
+.pnp.*
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.turbo/
+.nx/
+.pnpm-store/
+pnpm-lock.yaml? # keep if you want to commit - remove this line if not
+
+# IDEs / editors
+.vscode/
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+debug.log*
+
+# React Native / Expo
+# Android
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/*.keystore
+
+# iOS / Xcode
+ios/Pods/
+ios/build/
+ios/DerivedData/
+*.xcworkspace
+*.xcodeproj/xcuserdata/
+*.xcuserstate
+
+# Expo
+.expo/
+.expo-shared/
+
+# Mobile build artifacts
+*.apk
+*.aab
+*.app
+*.ipa
+
+# Credentials / secrets / keys
+*.p12
+*.pem
+*.key
+*.jks
+fastlane/Preview.html
+fastlane/report.xml
+fastlane/test_output/
+
+# Serverless / deployment
+.serverless/
+.vercel/
+.now/
+.surge/
+
+# Docker
+docker-compose.override.yml
+*.env.*.local
+
+# Misc
+thumbs.db
