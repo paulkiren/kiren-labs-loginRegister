@@ -3,30 +3,47 @@
  * https://github.com/facebook/react-native
  *
  * @format
- * @flow
  */
 
-import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import React from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from 'react-native';
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android:
-    'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
+function App() {
+  const isDarkMode = useColorScheme() === 'dark';
 
-type Props = {};
-export default class App extends Component<Props> {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>Welcome to React Native!</Text>
-        <Text style={styles.instructions}>To get started, edit App.js</Text>
-        <Text style={styles.instructions}>{instructions}</Text>
-      </View>
-    );
-  }
+  const backgroundStyle = {
+    backgroundColor: isDarkMode ? '#000' : '#fff',
+    flex: 1,
+  };
+
+  return (
+    <SafeAreaView style={backgroundStyle}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={backgroundStyle.backgroundColor}
+      />
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        style={backgroundStyle}>
+        <View style={styles.container}>
+          <Text style={[styles.title, {color: isDarkMode ? '#fff' : '#000'}]}>
+            Welcome to React Native!
+          </Text>
+          <Text style={[styles.text, {color: isDarkMode ? '#ccc' : '#333'}]}>
+            Edit App.js to get started
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -34,16 +51,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    padding: 20,
   },
-  welcome: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
     textAlign: 'center',
-    margin: 10,
+    marginBottom: 10,
   },
-  instructions: {
+  text: {
+    fontSize: 16,
     textAlign: 'center',
-    color: '#333333',
     marginBottom: 5,
   },
 });
+
+export default App;
