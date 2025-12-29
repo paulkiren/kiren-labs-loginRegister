@@ -1,8 +1,5 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 import { IdentityController } from './identity.controller';
 import { AuthService } from './services/auth.service';
@@ -16,21 +13,10 @@ import { NodeCryptoService } from '../../infrastructure/adapters/node-crypto.ser
 
 @Module({
   imports: [
-    JwtModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const privateKeyPath = config.get('PRIVATE_KEY_PATH') || join(process.cwd(), '../../secrets/jwt.key');
-        const privateKey = readFileSync(privateKeyPath, 'utf8');
-        
-        return {
-          privateKey,
-          signOptions: {
-            algorithm: 'RS256',
-            expiresIn: config.get('ACCESS_TTL') || '15m',
-            issuer: config.get('JWT_ISS') || 'https://api.local',
-            audience: config.get('JWT_AUD') || 'https://api.local',
-          },
-        };
+    JwtModule.register({
+      secret: 'temp-secret-will-be-overridden',
+      signOptions: {
+        expiresIn: '15m',
       },
     }),
   ],

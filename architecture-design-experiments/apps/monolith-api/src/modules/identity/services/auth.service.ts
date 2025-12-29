@@ -1,10 +1,10 @@
 import { Injectable, Inject, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserRepository } from '../../../domain/ports/user.repository';
 import { RefreshSessionRepository } from '../../../domain/ports/refresh-session.repository';
 import { PasswordResetRepository } from '../../../domain/ports/password-reset.repository';
 import { CryptoService } from '../../../domain/ports/crypto.service';
+import { TokenService } from './token.service';
 import { RegisterDto, LoginDto, RefreshDto, LogoutDto, PasswordResetRequestDto, PasswordResetConfirmDto } from '../dto';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class AuthService {
     @Inject('RefreshSessionRepository') private sessionRepo: RefreshSessionRepository,
     @Inject('PasswordResetRepository') private resetRepo: PasswordResetRepository,
     @Inject('CryptoService') private crypto: CryptoService,
-    private jwtService: JwtService,
+    private tokenService: TokenService,
     private config: ConfigService,
   ) {}
 
@@ -132,7 +132,7 @@ export class AuthService {
   }
 
   private async issueTokens(userId: string) {
-    const accessToken = this.jwtService.sign({ sub: userId });
+    const accessToken = this.tokenService.signAccessToken(userId);
     const refreshToken = this.crypto.generateToken();
     const tokenHash = this.crypto.hashToken(refreshToken);
     const ttlSeconds = parseInt(this.config.get('REFRESH_TTL_SECONDS') || '604800');
