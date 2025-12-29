@@ -43,152 +43,87 @@ Rule: treat this as the contract of truth. Any deviation must be intentional and
   - POST /auth/register
   - POST /auth/login
   - POST /auth/refresh
-  - POST /auth/logout
-  - GET /auth/me
-  - POST /auth/password-reset/request
-  - POST /auth/password-reset/confirm
-  - GET /users
-  - GET /users/{id}
-  - PATCH /users/{id}
-  - DELETE /users/{id}
-  - GET /health (per service)
-- Schemas:
-  - UserPublic {id, email, name, createdAt}
-  - RegisterRequest {email, password, name}
-  - LoginRequest {email, password}
-  - LoginResponse {accessToken, refreshToken?, expiresIn, tokenType}
-  - RefreshResponse {accessToken, refreshToken?}
-  - ErrorResponse {message, code, traceId}
-  - PasswordResetRequest {email}
-  - PasswordResetConfirm {token, password}
+  ## 10-Day Plan (v3): Login/Register Across Architectures (NestJS + TS)
+  Audience: deliver one canonical login/register domain across multiple architectures, with identical contract and token semantics.
+  Tech: TypeScript/NestJS, Postgres (monolith/microservices), AWS (API Gateway + Lambda), RS256 access JWT + opaque refresh with rotation.
 
-### Security Checklist (RS256 + Refresh Rotation)
-- Keys/JWKS
-  - RS256 keypair per environment; expose JWKS with `kid`.
-  - Rotation policy: new `kid` on schedule; keep old keys valid for token TTL; JWKS cache TTL documented.
-  - Validation: consumers verify `iss`, `aud`, `kid`, `alg=RS256`.
-- Tokens
-  - Access tokens short-lived (≤15m).
-  - Refresh tokens: opaque random, stored hashed+salted; include session metadata (deviceId/fingerprint, createdAt, lastUsedAt).
-  - Rotation: rotate on every refresh; atomically revoke old token; reuse detection triggers session revocation and audit event.
-  - Logout: revoke current refresh chain/session.
-- Passwords & reset
-  - Hash passwords with argon2id (preferred) or bcrypt.
-  - Password reset tokens stored hashed; single-use; expire quickly.
-- Abuse prevention
-  - Rate limit login/refresh/password reset; protect from enumeration with uniform errors.
-  - Audit logs for auth events; traceId in responses.
-- Transport & headers
-  - HTTPS everywhere; HSTS; security headers; strict CORS allowlist; remove x-powered-by.
-- Secrets
-  - Local dev `.env`; AWS uses SSM/Secrets Manager; protect private keys; least-privilege IAM.
-- Service-to-service auth
-  - Gateway→services signed token or mTLS; limit network exposure.
+  ### Decisions to Lock on Day 1
+  - Serverless DB: Aurora Serverless v2 + RDS Proxy (preferred for SQL parity) OR DynamoDB (single-table redesign). Pick one.
+  - IaC: CDK or Terraform (or Serverless Framework if DynamoDB-first). Pick one.
+  - Event bus: SNS/SQS (default) OR Kafka/Kinesis if ordering/throughput demands.
+  - Refresh delivery: web uses secure httpOnly cookie (SameSite=Lax/Strict in prod), mobile posts refresh in body and stores securely. Same endpoint behavior.
+  - Key custody: RSA keys per env; storage in AWS KMS/Secrets Manager (or local files in dev) with rotation schedule and cache TTL documented.
 
-### Comparison Matrix (qualitative)
-- Clean Monolith
-  - Performance: low-latency, single hop
-  - Complexity: low
-  - Cost: low
-  - Ops/debugging: easiest
-  - Scaling model: scale one service
-- Microservices
-  - Performance: medium (extra hops)
-  - Complexity: high (contracts, network, deployments)
-  - Cost: higher (multiple services)
-  - Ops/debugging: harder (distributed tracing needed)
-  - Scaling model: scale per service
-- Serverless
-  - Performance: variable (cold starts + external DB)
-  - Complexity: medium (IaC + service limits)
-  - Cost: pay-per-use; best at spiky/low load
-  - Ops/debugging: medium-hard (distributed logs)
-  - Scaling model: automatic
-- Event-Driven (overlay)
-  - Performance: async/eventual for side effects
-  - Complexity: high (idempotency, retries, DLQ)
-  - Cost: broker-dependent
-  - Ops/debugging: harder (message tracing)
+  ### Domain and Contract (Canonical, Single Source)
+  - Bounded Contexts: Identity (credentials, tokens, password reset), UserProfile (name CRUD, lifecycle).
+  - Events: UserRegistered, PasswordResetRequested, PasswordResetCompleted, RefreshTokenRotated, RefreshTokenReuseDetected, UserDeleted.
+  - OpenAPI (docs/openapi.yaml) is the source of truth; contract tests compare implementations to it.
+  - SecuritySchemes: bearerAuth (RS256 access JWT), refreshToken, internalAuth (gateway→services token or mTLS).
+  - Paths: POST /auth/register, /auth/login, /auth/refresh, /auth/logout, /auth/password-reset/request, /auth/password-reset/confirm; GET /auth/me; GET /users, /users/{id}; PATCH /users/{id}; DELETE /users/{id}; GET /health (per service).
+  - Schemas: UserPublic {id, email, name, createdAt}; RegisterRequest; LoginRequest; LoginResponse {accessToken, refreshToken?, expiresIn, tokenType}; RefreshResponse {accessToken, refreshToken?}; PasswordResetRequest; PasswordResetConfirm; ErrorResponse {message, code, traceId}.
 
-### Starter Scaffolding Commands
-- Monolith (Nest):
-  - npx @nestjs/cli new monolith-api --package-manager npm --strict
-- Microservices:
-  - npx @nestjs/cli new gateway && npx @nestjs/cli new auth-service && npx @nestjs/cli new user-service
-  - Add npm workspaces in root `package.json` (apps/*, packages/*)
-- Serverless (choose one approach):
-  - Nest adapter: npx @nestjs/cli new serverless
-  - Function-per-file: serverless create --template aws-nodejs-typescript
-- Docker baseline (to be authored):
-  - postgres + monolith-api (dev)
-  - gateway/auth/user services (microservices profile)
+  ### Security and Token Semantics (Must Match Everywhere)
+  - Access JWT: RS256, ≤15m TTL, claims: sub, iat, exp, iss, aud, kid.
+  - Refresh: opaque random, hashed+salted; stored with session metadata (sessionId/chainId, deviceId or fingerprint, createdAt, lastUsedAt, expiresAt, revokedAt, reuseDetectedAt). Rotate on every refresh; reuse detection revokes the chain and emits event.
+  - Logout: revoke current session/chain and dependent refresh tokens.
+  - JWKS: expose /jwks with kid; cache TTL defined; keep prior keys valid for overlap window; document rollback.
+  - Passwords: argon2id (preferred) or bcrypt; resets use hashed, single-use tokens with short TTL.
+  - Abuse controls: rate limit login/refresh/reset; uniform errors to prevent enumeration; audit log auth events; include traceId.
+  - Transport/headers: HTTPS, HSTS, CORS allowlist, no x-powered-by, security headers (CSP where viable).
 
-### 10-Day Daily Tasks & Deliverables (with Definition of Done)
-- Day 1: Plan & workspace
-  - Decide:
+  ### Repository Layout (Monorepo)
+  - apps/
+    - monolith-api (NestJS, hexagonal/ports)
+    - gateway (HTTP BFF for services)
+    - auth-service (Identity)
+    - user-service (UserProfile)
+    - serverless (lambdas or Nest lambda adapter)
+  - packages/
+    - shared (DTOs/types/errors/events, OpenAPI typings)
+    - config (env schema/loader)
+    - jwks (keygen/rotation + types)
+  - infra/
+    - docker (compose for Postgres + monolith/microservices)
+    - cdk or terraform (AWS stacks)
+  - docs/ (openapi.yaml, security.md with JWKS/rotation, runbooks)
+  - tests/ (contract/e2e/perf)
+
+  ### Track-Specific Notes
+  - Monolith (NestJS hexagonal): ports for persistence (Postgres via Prisma/TypeORM), crypto, email; adapters per port. Swagger generation must match docs/openapi.yaml.
+  - Microservices: gateway validates JWT via JWKS (cached); internal auth via signed token or mTLS; shared package for DTOs/errors/events; tracing propagated.
+  - Serverless: handlers per endpoint or Nest adapter; keys via KMS/Secrets Manager; JWKS cached; DB per Day 1 decision (Aurora + migrations or DynamoDB single-table with GSIs for users/sessions/resets).
+  - Event-driven overlay: publish non-critical side effects (audit/email). Idempotency keys, retries, DLQ.
+
+  ### Testing & Quality Gates
+  - Contract tests: snapshot against docs/openapi.yaml for each app.
+  - Unit + integration for services/adapters; e2e flows: register/login/me, refresh rotation success, reuse detection failure, password reset happy/expired.
+  - Security tests: JWKS cache TTL, invalid kid, expired/invalid tokens, rate limit behavior.
+  - CI: lint, typecheck, unit/integration, contract, e2e (monolith then gateway path), docker build; optional perf smoke.
+
+  ### Observability & Ops
+  - Structured logs with traceId/requestId; OpenTelemetry tracing; basic metrics (auth attempts, refresh rotations, reuse detections, rate-limit hits).
+  - Runbooks: key rotation, JWKS cache bust, refresh chain revocation, password reset handling, DB migration steps.
+
+  ### 10-Day Plan (DoD = contract parity + tests green)
+  - Day 1: Decide serverless DB, event bus, IaC; scaffold monorepo (apps/, packages/, infra/, docs/, tests/); base TS config, ESLint/Prettier; author docs/openapi.yaml and docs/security.md (JWKS policy, rotation, cache TTL). DoD: lint/typecheck run; contract agreed.
+  - Day 2: Monolith scaffold (Nest) with hexagonal modules; Postgres schema + migrations for users, sessions/refresh, resets; RS256 keys + JWKS endpoint; refresh storage model. DoD: docker-compose up brings Postgres + API; /health and /jwks work.
+  - Day 3: Monolith endpoints + guards; refresh rotation + reuse detection; Swagger aligned to openapi; e2e (register/login/me, refresh success, reuse fail). DoD: e2e green.
+  - Day 4: Microservices scaffold (gateway, auth-service, user-service); shared contracts package; contract tests wired; gateway JWT validation with JWKS cache policy. DoD: services start; gateway health; contract snapshot in CI.
+  - Day 5: Auth-service implements Identity endpoints, refresh rotation, JWKS; emits events. Gateway routes auth, adds rate limiting/internal auth. DoD: contract tests + minimal e2e through gateway pass.
+  - Day 6: User-service CRUD; consumes UserRegistered; handles deletes; tracing propagation across gateway/auth/user. DoD: end-to-end via gateway (register→profile fetch/update) passes.
+  - Day 7: Serverless scaffold; choose DB path and wire persistence; RS256 via KMS/Secrets Manager; JWKS served; handlers match contract. DoD: stack synth/deployable; local run path documented.
+  - Day 8: Event-driven side effects (audit/email) on chosen bus; idempotency + DLQ + retry tested. DoD: publish/consume path verified; DLQ test passes.
+  - Day 9: Cross-cutting hardening: security headers, CORS allowlist, rate limits; OTel tracing/metrics; CI pipeline finalized. DoD: CI green; tracing locally visible.
+  - Day 10: Perf smoke (k6/Artillery) on monolith + gateway; record p95; cost/complexity notes per track; finalize docs/runbooks. DoD: docs complete; perf notes captured.
+
+  ### Quick Start (local dev)
+  - Compose profile: Postgres + monolith-api hot reload; later add gateway/auth/user services profile.
+  - Dev keys: generate RSA pair per env; write JWKS and private key to local secrets; set JWKS cache TTL in config.
+  - Env: .env.example with JWT settings, DB URLs, rate limits, CORS origins, service-to-service secret.
+
+  ### Risks to Track
+  - Divergence from canonical OpenAPI; mitigate with contract tests.
+  - JWKS cache staleness after rotation; mitigate with cache TTL + bust hook.
+  - Refresh reuse detection bugs; cover with e2e negative tests and metrics.
+  - DynamoDB option requires separate modeling; if chosen, document single-table design early.
     - Serverless DB strategy: (A) Aurora Serverless v2 + RDS Proxy (SQL parity) OR (B) DynamoDB (cloud-native)
-    - IaC tool: CDK or Terraform or Serverless Framework
-    - Event bus: SNS/SQS (recommended) vs Kafka/Kinesis
-    - Refresh delivery: cookie-first vs body-first (document mobile/web handling)
-  - Create monorepo skeleton (apps/, packages/, infra/, docs/); root workspaces; base TS config; ESLint/Prettier; editor settings.
-  - Write canonical OpenAPI doc and make it “source of truth”; add docs/security.md with JWKS + rotation policy.
-  - Definition of Done: repo boots lint/typecheck; docs exist; OpenAPI contract agreed.
-- Day 2: Monolith scaffold (Hexagonal)
-  - Nest monolith module boundaries aligned to DDD contexts; ports/adapters boundaries explicit.
-  - Postgres schema + migrations for users, refresh_tokens/sessions, password_resets.
-  - Implement RS256 signing + JWKS endpoint; implement refresh rotation storage model.
-  - Definition of Done: `docker-compose up` starts Postgres + API; health endpoint works; JWKS exposed.
-- Day 3: Monolith endpoints + tests
-  - Implement auth endpoints + user CRUD; DTO validation + guards.
-  - Swagger/OpenAPI generation must match canonical spec.
-  - Add e2e tests:
-    - happy path register/login/me
-    - refresh rotation success
-    - refresh token reuse detection (refresh twice with same token => reject + revoke session)
-  - Definition of Done: e2e green; Swagger UI matches contract.
-- Day 4: Microservices design & scaffold (contracts-first)
-  - Formalize boundaries: auth-service (Identity), user-service (UserProfile), gateway (HTTP façade).
-  - Add shared contract package and contract tests (OpenAPI/schema snapshot).
-  - Gateway validates JWT via JWKS (cache policy documented).
-  - Definition of Done: services run; gateway routes health; contract snapshot in CI.
-- Day 5: Microservices auth implementation
-  - Auth-service implements all auth endpoints; JWKS; refresh rotation; emits events.
-  - Gateway routes auth endpoints; adds rate limiting; internal auth between gateway and services.
-  - Definition of Done: contract tests + minimal e2e through gateway pass.
-- Day 6: Microservices user implementation
-  - User-service user CRUD; consumes UserRegistered; handles deletes.
-  - Add tracing correlation IDs across gateway/auth/user.
-  - Definition of Done: end-to-end via gateway (register→profile fetch/update) passes.
-- Day 7: Serverless track scaffold
-  - Implement endpoints as Lambda handlers behind API Gateway HTTP API.
-  - RS256 key management: prefer KMS-managed key or Secrets Manager; JWKS served/cached.
-  - DB per Day 1 choice:
-    - Aurora: RDS Proxy + migrations approach
-    - DynamoDB: single-table design for users + sessions + reset tokens
-  - Definition of Done: deployable stack synths; local run path documented.
-- Day 8: Event-driven enhancements (side effects)
-  - Add SNS/SQS (or chosen broker); publish events; consumers for audit/email.
-  - Add idempotency keys; DLQ; retry policy.
-  - Definition of Done: publish/consume path verified; DLQ test works.
-- Day 9: Cross-cutting concerns & CI
-  - Observability: structured logs, OpenTelemetry tracing, metrics; request IDs.
-  - Security hardening: headers, CORS, rate limits per architecture.
-  - CI: lint, test, build, docker build, contract snapshot.
-  - Definition of Done: CI green; tracing works locally for monolith/microservices.
-- Day 10: Hardening, perf, docs
-  - Performance smoke tests (k6/Artillery) across tracks; compare p95 latency.
-  - Cost/complexity notes updated with real measurements and infra footprints.
-  - Definition of Done: final docs + matrix; ready for review.
-
-### Day 1 Starter Code (to generate next)
-- Root workspaces + base tooling.
-- apps/monolith-api: minimal Nest app with HealthController, ConfigModule, and placeholder Auth/User modules.
-- infra/docker: docker-compose.dev.yml for Postgres + monolith-api (hot reload).
-
-### Notes: Serverless DB Choice
-- Aurora Serverless v2 + RDS Proxy: best parity with Postgres monolith/microservices; simpler domain reuse.
-- DynamoDB: simpler ops/cost; requires persistence model redesign and careful query/index planning.
-
-### Notes: Event Bus Choice
-- SNS/SQS: simplest AWS-native fanout + queue processing with DLQ.
-- Kafka/Kinesis: only if ordering/high throughput requirements justify extra ops.
