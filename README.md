@@ -27,9 +27,18 @@ A full-stack authentication template with React Native mobile app, React web cli
 
 ### Backend Server
 - **Technology**: Node.js with Express 4.19.2
-- **Description**: API server for login/register endpoints
+- **Description**: Production-ready authentication API server
 - **Location**: `/server`
-- **Features**: JWT authentication, bcrypt password hashing, CORS support
+- **Features**:
+  - JWT authentication (access + refresh tokens)
+  - Secure password hashing with scrypt
+  - Password reset functionality
+  - User management (CRUD operations)
+  - JSON file persistence
+  - MVC architecture with service layer
+  - Input validation and error handling
+  - CORS support
+- **Documentation**: See [server/README.md](server/README.md) for detailed API docs
 
 ## Requirements
 
