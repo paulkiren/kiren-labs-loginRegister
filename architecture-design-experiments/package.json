@@ -16,7 +16,10 @@
     "format:write": "prettier --write .",
     "typecheck": "tsc -b",
     "test": "echo \"TODO: add tests\"",
-    "contract:test": "echo \"TODO: contract tests\""
+    "contract:test": "echo \"TODO: contract tests\"",
+    "dev:monolith": "npm run start:dev --workspace=apps/monolith-api",
+    "docker:up": "docker-compose -f infra/docker/docker-compose.dev.yml up --build",
+    "docker:down": "docker-compose -f infra/docker/docker-compose.dev.yml down"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.13.0",
