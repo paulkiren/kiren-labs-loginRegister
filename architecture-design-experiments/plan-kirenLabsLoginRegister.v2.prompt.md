@@ -3,11 +3,11 @@ Audience: deliver one canonical login/register domain across multiple architectu
 Tech: TypeScript/NestJS, Postgres (monolith/microservices), AWS (API Gateway + Lambda), RS256 access JWT + opaque refresh with rotation.
 
 ### Decisions to Lock on Day 1
-- Serverless DB: Aurora Serverless v2 + RDS Proxy (preferred for SQL parity) OR DynamoDB (single-table redesign). Pick one.
-- IaC: CDK or Terraform (or Serverless Framework if DynamoDB-first). Pick one.
-- Event bus: SNS/SQS (default) OR Kafka/Kinesis if ordering/throughput demands.
-- Refresh delivery: web uses secure httpOnly cookie (SameSite=Lax/Strict in prod), mobile posts refresh in body and stores securely. Same endpoint behavior.
-- Key custody: RSA keys per env; storage in AWS KMS/Secrets Manager (or local files in dev) with rotation schedule and cache TTL documented.
+- Serverless DB: **Aurora Serverless v2 + RDS Proxy** (chosen; SQL parity with monolith/microservices). DynamoDB remains an alternative but not primary.
+- IaC: **CDK** (chosen). Terraform/Serverless Framework remain optional if requirements change.
+- Event bus: **SNS/SQS** (chosen). Kafka/Kinesis only if ordering/throughput demands arise.
+- Refresh delivery: **Web uses secure httpOnly cookie (SameSite=Lax/Strict in prod); mobile sends refresh in body and stores securely.** Same endpoint semantics.
+- Key custody: RSA keys per env; **KMS/Secrets Manager in prod/stage; local files in dev** with documented rotation schedule and cache TTL.
 
 ### Domain and Contract (Canonical, Single Source)
 - Bounded Contexts: Identity (credentials, tokens, password reset), UserProfile (name CRUD, lifecycle).
