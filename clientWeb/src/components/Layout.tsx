@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { API_URL } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 
