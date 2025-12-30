@@ -51,7 +51,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
     borderRadius: 12,
     padding: 18,
-    gap: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
@@ -60,7 +59,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#e5e7eb',
   },
-  field: { gap: 6 },
+  field: { marginBottom: 12 },
   label: { color: '#c7d2fe', fontSize: 14 },
   input: {
     backgroundColor: 'rgba(255,255,255,0.06)',
