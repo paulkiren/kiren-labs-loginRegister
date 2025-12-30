@@ -26,8 +26,8 @@ export class AuthService {
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
     const token = await this.jwtService.signAsync(
-      { sub: String(user.id) },
-      { secret: process.env.JWT_SECRET || 'dev-secret', expiresIn: process.env.TOKEN_EXPIRY || '60m' }
+      { sub: user.id },
+      { secret: process.env.JWT_SECRET || 'dev-secret', expiresIn: process.env.TOKEN_EXPIRY || '60m' } as any
     );
 
     return { access_token: token, token_type: 'bearer' };
