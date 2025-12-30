@@ -1,44 +1,43 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
+import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { AuthProvider, useAuth } from './src/auth/AuthContext';
+import { LoginScreen } from './src/components/LoginScreen';
+import { ProfileScreen } from './src/components/ProfileScreen';
 
 function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
+  const { token } = useAuth();
+  const isLoggedIn = Boolean(token);
 
   return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
+    <View style={styles.body}>
+      {isLoggedIn ? <ProfileScreen /> : <LoginScreen />}
     </View>
   );
 }
 
+function App(): React.JSX.Element {
+  return (
+    <AuthProvider>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar barStyle="light-content" backgroundColor="#0b1021" />
+          <AppContent />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </AuthProvider>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: '#0b1021',
+  },
+  body: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#0b1021',
   },
 });
 
