@@ -1,9 +1,7 @@
 
-import { UsersRepository } from './users.repository';
-import { CreateUserDto } from './dto/create-user.dto';
+import { UsersRepository, CreateUserRecord } from './users.repository';
 import { User } from './user.entity';
 import { JsonDb } from '../db/json-db';
-import { hashPassword } from '../common/hash.util';
 
 export class JsonUsersRepository implements UsersRepository {
   private db: JsonDb;
@@ -16,21 +14,14 @@ export class JsonUsersRepository implements UsersRepository {
     return Object.assign(new User(), obj);
   }
 
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(record: CreateUserRecord): Promise<User> {
     const data = await this.db.read();
-    // Uniqueness checks here to keep UsersService simpler (or keep in service if you prefer)
-    if (data.users.some(u => u.email === dto.email)) {
-      throw new Error('Email already registered');
-    }
-    if (data.users.some(u => u.username === dto.username)) {
-      throw new Error('Username already taken');
-    }
     const id = ++data.lastId;
     const user: User = {
       id,
-      email: dto.email,
-      username: dto.username,
-      hashedPassword: await hashPassword(dto.password),
+      email: record.email,
+      username: record.username,
+      hashedPassword: record.hashedPassword,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User;
