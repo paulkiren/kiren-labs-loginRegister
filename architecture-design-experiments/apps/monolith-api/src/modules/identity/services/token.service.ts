@@ -6,8 +6,8 @@ import { resolve } from 'path';
 
 @Injectable()
 export class TokenService implements OnModuleInit {
-  private privateKey: string;
-  private publicKey: string;
+  private privateKey: string = '';
+  private publicKey: string = '';
 
   constructor(
     private jwtService: JwtService,
@@ -37,7 +37,7 @@ export class TokenService implements OnModuleInit {
         console.warn(`✗ Public key not found at ${publicKeyPath}`);
       }
     } catch (error) {
-      console.warn('Failed to read JWT keys:', error.message);
+      console.warn('Failed to read JWT keys:', error instanceof Error ? error.message : String(error));
     }
   }
 
