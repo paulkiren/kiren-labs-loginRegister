@@ -7,7 +7,10 @@ import { HealthController } from './health.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '../../.env',
+    }),
     PrismaModule,
     IdentityModule,
     UserProfileModule,
