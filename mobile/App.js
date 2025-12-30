@@ -1,68 +1,40 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 import React from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { AuthProvider, useAuth } from './src/auth/AuthContext';
+import { LoginScreen } from './src/components/LoginScreen';
+import { ProfileScreen } from './src/components/ProfileScreen';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? '#000' : '#fff',
-    flex: 1,
-  };
+function AppContent() {
+  const { token } = useAuth();
+  const isLoggedIn = Boolean(token);
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <View style={styles.container}>
-          <Text style={[styles.title, {color: isDarkMode ? '#fff' : '#000'}]}>
-            Welcome to React Native!
-          </Text>
-          <Text style={[styles.text, {color: isDarkMode ? '#ccc' : '#333'}]}>
-            Edit App.js to get started
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <View style={styles.body}>
+      {isLoggedIn ? <ProfileScreen /> : <LoginScreen />}
+    </View>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#0b1021" />
+        <AppContent />
+      </SafeAreaView>
+    </AuthProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: '#0b1021',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  text: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 5,
+  body: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#0b1021',
   },
 });
 
